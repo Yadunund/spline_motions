@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 def compute_coefficients(initial_position, final_position, initial_velocity, final_velocity, initial_time, final_time):
     td = final_time-initial_time
     x0 = initial_position
@@ -16,7 +14,7 @@ def compute_coefficients(initial_position, final_position, initial_velocity, fin
     
     return [a,b,c,d]
 
-def get_coefficients(knots):
+def get_spline_coefficients(knots):
     '''
     This function takes a list of dictionaries representing knots of segments in a trajectory.
     It returns a list of dictionaries containing the a,b,c,d coefficients of the 
@@ -78,20 +76,39 @@ def get_position(t, coefficients):
     return [x,y,th]
 
 
+def bezier_helper_function(coeffs):
+    assert len(coeffs) == 4
+    a = coeffs[0]
+    b = coeffs[1]
+    c = coeffs[2]
+    d = coeffs[3]
+    p0 = d
+    p1 = (c + 3*p0) / 3
+    p2 = (b - 3*p0 + 6*p1) / 3
+    p3 = a + p0 - 3*p1 + 3*p2
+    
+    return [p0, p1, p2, p3]
 
-        
+def get_bezier_control_points(segment_coefficients):
+    px = bezier_helper_function(segment_coefficients['x_coeffs'])
+    py = bezier_helper_function(segment_coefficients['y_coeffs'])
+    return list(zip(px, py))
     
 def main():
-  #time is passed in nanoseconds 
-  time_1 = 110773622239122
-  duration_in_sec = 400
-  time_2 = time_1 + (10**9) * duration_in_sec; 
-  knots = [ {"x":[5,8,0],"v": [1,0,0],"t":time_1} , {"x":[0,0,0], "v": [0,0,0], "t":time_2} ]
-  coefficients = get_coefficients(knots)
+    #time is passed in nanoseconds 
+    time_1 = 110773622239122
+    duration_in_sec = 400
+    time_2 = time_1 + (10**9) * duration_in_sec; 
+    knots = [ {"x":[5,8,0],"v": [1,0,0],"t":time_1} , {"x":[0,0,0], "v": [0,0,0], "t":time_2} ]
+    spline_coefficients = get_spline_coefficients(knots)
 
-  # Then a position at time t can be computed as below
-  position = get_position(time_1,coefficients)
-  print(position)
+    # Then a position at time t can be computed as below
+    position = get_position(time_1,spline_coefficients)
+    print(f"Position at time [{time_1}]: {position}")
+
+    # Convert first segment to bezier control points
+    control_points = get_bezier_control_points(spline_coefficients[0])
+    print(f"Control Points: {control_points}")
 
 if __name__ == '__main__':
   main()
